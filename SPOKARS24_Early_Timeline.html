@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The First 100 Days — SPOKARS-24</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+:root {
+  --bg:#e8e4df;--bg2:#f2efe9;--bg3:#ddd9d3;
+  --text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a82;
+  --accent:#b91c1c;--blue:#1d4ed8;--amber:#92400e;--green:#166534;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'IBM Plex Sans',-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden;}
+::selection{background:rgba(185,28,28,.15);}
+
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .8s ease,transform .8s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+.reveal-delay-1{transition-delay:.15s;}.reveal-delay-2{transition-delay:.3s;}.reveal-delay-3{transition-delay:.45s;}
+
+.warn-strip{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(146,64,14,.06);border-bottom:1px solid rgba(146,64,14,.15);padding:6px 0;text-align:center;font-size:11px;font-family:var(--mono);color:var(--amber);letter-spacing:1px;backdrop-filter:blur(10px);}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:80px 40px 60px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,rgba(185,28,28,.04) 0%,transparent 60%);}
+.hero-kicker{font-family:var(--mono);font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:24px;position:relative;}
+.hero h1{font-family:var(--serif);font-size:clamp(42px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-2px;max-width:900px;margin-bottom:28px;position:relative;color:var(--text);}
+.hero h1 em{font-style:normal;color:var(--accent);}
+.hero-sub{font-size:clamp(16px,2vw,20px);font-weight:300;color:var(--text2);max-width:640px;line-height:1.6;position:relative;}
+.hero-date{font-family:var(--mono);font-size:13px;color:var(--text3);margin-top:40px;position:relative;}
+.scroll-hint{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3);font-size:11px;font-family:var(--mono);letter-spacing:1px;animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:.4;transform:translateX(-50%) translateY(0);}50%{opacity:1;transform:translateX(-50%) translateY(6px);}}
+.scroll-arrow{width:20px;height:20px;border-right:2px solid var(--text3);border-bottom:2px solid var(--text3);transform:rotate(45deg);}
+
+.narrative{max-width:720px;margin:0 auto;padding:0 32px;}
+.section{padding:52px 0;border-top:1px solid rgba(0,0,0,.06);}
+.section:first-child{border-top:none;}
+
+.date-marker{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+.date-marker.who{color:var(--blue);}.date-marker.gov{color:var(--amber);}
+
+.section h2{font-family:var(--serif);font-size:clamp(28px,4vw,40px);font-weight:700;line-height:1.15;letter-spacing:-1px;margin-bottom:24px;color:var(--text);}
+.section p{font-size:17px;line-height:1.85;color:var(--text2);margin-bottom:20px;font-weight:300;}
+.section p strong{color:var(--text);font-weight:500;}
+
+.pull-quote{border-left:3px solid var(--accent);padding:20px 0 20px 28px;margin:40px 0;font-family:var(--serif);font-size:22px;font-weight:400;line-height:1.5;color:var(--text);font-style:italic;}
+.pull-quote.blue{border-left-color:var(--blue);}
+.pull-quote cite{display:block;margin-top:12px;font-size:13px;font-family:var(--sans);font-style:normal;color:var(--text3);font-weight:400;}
+
+.doc-card{background:var(--bg2);border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:24px 28px;margin:32px 0;position:relative;overflow:hidden;}
+.doc-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px 0 0 2px;}
+.doc-card.news::before{background:var(--text3);}.doc-card.who::before{background:var(--blue);}.doc-card.gov::before{background:var(--amber);}.doc-card.science::before{background:#7c3aed;}
+.doc-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.doc-card.news .doc-label{color:var(--text3);}.doc-card.who .doc-label{color:var(--blue);}.doc-card.gov .doc-label{color:var(--amber);}.doc-card.science .doc-label{color:#7c3aed;}
+.doc-title{font-family:var(--serif);font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text);}
+.doc-text{font-size:14px;line-height:1.7;color:var(--text2);}
+
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin:32px 0;}
+.stat{background:var(--bg2);border:1px solid rgba(0,0,0,.06);border-radius:8px;padding:16px 18px;text-align:center;}
+.stat-num{font-family:var(--mono);font-size:30px;font-weight:500;color:var(--accent);}
+.stat-label{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono);letter-spacing:.5px;}
+
+/* Data table */
+.data-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13px;}
+.data-table th{text-align:left;padding:8px 12px;border-bottom:2px solid rgba(0,0,0,.12);color:var(--text3);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:500;}
+.data-table td{padding:7px 12px;border-bottom:1px solid rgba(0,0,0,.05);color:var(--text2);}
+.data-table td:first-child{color:var(--text);font-weight:500;}
+.data-table .num{text-align:right;font-family:var(--mono);font-size:12px;}
+.data-table .accent{color:var(--accent);font-weight:600;}
+
+/* Progression tracker */
+.progression{display:flex;gap:2px;margin:24px 0;flex-wrap:wrap;}
+.prog-week{flex:1;min-width:70px;background:var(--bg2);border:1px solid rgba(0,0,0,.06);border-radius:6px;padding:10px 8px;text-align:center;}
+.prog-week.active{border-color:var(--accent);background:rgba(185,28,28,.04);}
+.prog-wk{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;}
+.prog-num{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text);}
+.prog-label{font-size:9px;color:var(--text3);margin-top:2px;}
+
+/* Story maps — blend into page background */
+.story-map{margin:40px 0;position:relative;overflow:hidden;}
+.story-map::before,.story-map::after{content:'';position:absolute;left:0;right:0;z-index:400;pointer-events:none;}
+.story-map::before{top:0;height:50px;background:linear-gradient(to bottom,var(--bg) 0%,transparent 100%);}
+.story-map::after{bottom:0;height:50px;background:linear-gradient(to top,var(--bg) 0%,transparent 100%);}
+.story-map .side-fade-l,.story-map .side-fade-r{position:absolute;top:0;bottom:0;width:30px;z-index:400;pointer-events:none;}
+.story-map .side-fade-l{left:0;background:linear-gradient(to right,var(--bg),transparent);}
+.story-map .side-fade-r{right:0;background:linear-gradient(to left,var(--bg),transparent);}
+.story-map .leaflet-container{height:440px;background:var(--bg) !important;}
+.story-map .map-caption{position:relative;z-index:401;padding:8px 0 0;font-size:12px;color:var(--text3);font-family:var(--mono);background:transparent;text-align:center;}
+.leaflet-control-attribution{display:none !important;}
+.leaflet-tile-pane{opacity:1 !important;}
+/* Just desaturate: sea becomes neutral gray, land stays white/light */
+.leaflet-tile-pane img{filter:saturate(0) brightness(0.95);}
+.reveal.visible .story-map{opacity:1 !important;}
+@media(max-width:800px){
+  .story-map .side-fade-l,.story-map .side-fade-r{width:16px;}
+  .story-map .leaflet-container{height:340px;}
+}
+
+@keyframes marker-pulse{0%,100%{box-shadow:0 0 0 0 rgba(185,28,28,.5);}50%{box-shadow:0 0 0 14px rgba(185,28,28,0);}}
+@keyframes marker-pulse-blue{0%,100%{box-shadow:0 0 0 0 rgba(29,78,216,.5);}50%{box-shadow:0 0 0 14px rgba(29,78,216,0);}}
+/* SVG pulse animation for D3 maps */
+@keyframes svg-pulse{0%{r:6;opacity:0.5;}50%{r:18;opacity:0;}100%{r:6;opacity:0.5;}}
+@keyframes svg-pulse-sm{0%{r:5;opacity:0.4;}50%{r:14;opacity:0;}100%{r:5;opacity:0.4;}}
+.svg-ring{animation:svg-pulse 2s ease infinite;}
+.svg-ring-sm{animation:svg-pulse-sm 2s ease infinite;}
+
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.1),transparent);margin:0 auto;max-width:200px;}
+.footer{padding:80px 32px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--mono);}
+.footer .warn{color:var(--amber);font-size:13px;margin-bottom:12px;}
+
+@media(max-width:600px){.hero{padding:60px 24px 40px;}.narrative{padding:0 20px;}.section{padding:60px 0;}.pull-quote{font-size:18px;padding-left:20px;}.story-map .leaflet-container{height:320px;}}
+</style>
+</head>
+<body>
+
+<div class="warn-strip">&#9888; FICTIONAL EXERCISE SCENARIO — TRAINING USE ONLY</div>
+
+<div class="hero">
+  <div class="hero-kicker reveal">SPOKARS-24 · The Early Timeline</div>
+  <h1 class="reveal reveal-delay-1">The First <em>100 Days</em></h1>
+  <p class="hero-sub reveal reveal-delay-2">How a cluster of unexplained pneumonia cases in a Brisbane nursing home became a global public health emergency.</p>
+  <p class="hero-date reveal reveal-delay-3">September 26 – January 18, 2025</p>
+  <div class="scroll-hint"><span>Scroll</span><div class="scroll-arrow"></div></div>
+</div>
+
+<div class="narrative">
+
+<!-- ===== ACT I: THE SPARK ===== -->
+
+<div class="section reveal">
+  <div class="date-marker">September 26, 2024 · Day 1</div>
+  <h2>Two patients, one nursing home</h2>
+  <p>On a Thursday morning in late September, two elderly residents of a nursing home in <strong>Kelvin Grove, Brisbane</strong> are transferred to the Royal Brisbane and Women's Hospital. The patients are 79 and 86 years old. Both have pneumonia. The standard respiratory panel comes back negative: not influenza, not RSV, not SARS-CoV-2, not any bacterial agent the lab tests for.</p>
+  <p>The next day, three more residents develop influenza-like symptoms. One, a 76-year-old, is admitted on September 28. Two more, ages unknown, follow on September 29. The nursing home now has five patients in hospital, and no diagnosis.</p>
+
+  <div class="story-map reveal" id="map1-wrap">
+    <div class="side-fade-l"></div><div class="side-fade-r"></div>
+    <div id="map1" style="height:420px;"></div>
+    <div class="map-caption">Brisbane, Queensland — September 26. The Kelvin Grove nursing home and RBWH are less than 3 km apart.</div>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker">September 30 · Day 5</div>
+  <h2>Isolation</h2>
+  <p>Queensland Health activates a rapid response team. The nursing home is placed under <strong>strict isolation</strong>: no visitors, limited staff movement. Contact tracing begins for every employee and resident who has passed through the facility in the past two weeks.</p>
+  <p>Over the next three days, nine more patients are hospitalized, all aged over 75. Then, on September 30, a case that changes the calculus: a 51-year-old caregiver is admitted with what doctors describe as <strong>atypical pneumonia</strong>. She has no underlying conditions. She is young, previously healthy, and now struggling to breathe. The pathogen, whatever it is, does not discriminate by age alone.</p>
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num">14</div><div class="stat-label">Hospitalized</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--amber)">2</div><div class="stat-label">Caregivers</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">0</div><div class="stat-label">Pathogen ID</div></div>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker gov">October 4 · Day 9</div>
+  <h2>The government escalates</h2>
+  <p>The Australian government raises the alert level. Laboratories begin urgent testing to identify the pathogen. Epidemiologists analyze case links and potential sources. Hospitals and aged care providers across Brisbane receive alerts to monitor and report similar cases. RBWH begins preparing additional isolation beds.</p>
+
+  <div class="doc-card news reveal">
+    <div class="doc-label">The Courier-Mail · October 4</div>
+    <div class="doc-title">Mystery Illness Emerges in Brisbane Nursing Home: Authorities Investigate</div>
+    <div class="doc-text">Health authorities are investigating a cluster of unexplained respiratory illnesses at a Kelvin Grove nursing home, with several residents and a staff member hospitalized. The source remains unknown, prompting an urgent public health response. Epidemiologists are reviewing patient histories and potential exposures while laboratory teams analyze samples.</div>
+  </div>
+
+  <div class="pull-quote reveal">
+    "We're being told very little, and it's terrifying not knowing what's happening. I just want answers."
+    <cite>— Emma Thornton, whose mother is a resident at the facility</cite>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker">October 5 · Day 10</div>
+  <h2>A second cluster</h2>
+  <p><strong>Children's Health Queensland Hospital</strong> notifies Queensland Health of a family cluster. A four-year-old was admitted on September 26 with respiratory distress and dehydration. The following day, the child's mother developed severe symptoms and was transferred to Princess Alexandra Hospital. A 12-year-old sibling was admitted on September 30 with atypical pneumonia. A 15-year-old sibling was also hospitalized. The respiratory panel was negative for known viruses and bacteria in all cases.</p>
+  <p>A response team is deployed. One hundred contacts are identified, mostly schoolmates of the 12-year-old. The family reports no travel history.</p>
+  <p>Meanwhile, nine more nursing home patients and another caregiver are hospitalized. The simultaneous emergence of two distinct clusters — one in aged care, one in a family with children — raises a question that no one wants to ask out loud: <strong>are they connected?</strong></p>
+
+  <div class="story-map reveal" id="map2-wrap">
+    <div class="side-fade-l"></div><div class="side-fade-r"></div>
+    <div id="map2" style="height:480px;"></div>
+    <div class="map-caption">Brisbane — Two clusters, multiple hospitals. The family cluster (blue) appears 6 km south of the nursing home (red). No epidemiological link established.</div>
+  </div>
+
+  <div class="doc-card news reveal">
+    <div class="doc-label">ABC News · October 5</div>
+    <div class="doc-title">Brisbane on Edge: Mysterious Outbreaks Spark Pandemic Fears</div>
+    <div class="doc-text">Health authorities are racing to determine whether two separate clusters of unexplained respiratory illness could be linked. While no definitive pathogen has been identified, the increasing number of hospitalizations has prompted an escalated public health response and growing fears of a potential new pandemic.</div>
+  </div>
+</div>
+
+<!-- ===== ACT II: ESCALATION ===== -->
+
+<div class="section reveal">
+  <div class="date-marker who">October 6–7 · Days 11–12</div>
+  <h2>The world is notified</h2>
+  <p>Queensland's Chief Health Officer convenes an emergency meeting with Metro North HHS, Queensland Health, and the Communicable Diseases Network Australia. The Australian Health Protection Principal Committee is briefed. Australia's National IHR Focal Point <strong>directly notifies WHO's Western Pacific Regional Office in Manila</strong>.</p>
+  <p>On October 7, the news that everyone feared: <strong>the first two deaths</strong>. Both are nursing home patients, aged 82 and 84, with several comorbidities. The WHO issues its first official alert.</p>
+
+  <div class="doc-card who reveal">
+    <div class="doc-label">WHO Public Health Alert · October 7</div>
+    <div class="doc-title">Unexplained Clusters of Severe Respiratory Illness in Australia</div>
+    <div class="doc-text">36 confirmed hospitalizations reported in Brisbane, including elderly individuals and a separate family cluster involving children. Laboratory testing for influenza, RSV, SARS-CoV-2, and bacterial pneumonia agents has been negative. Genomic sequencing and advanced diagnostics are underway. Public Health Risk: Moderate to High.</div>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker gov">October 10–14 · Days 15–19</div>
+  <h2>It jumps</h2>
+  <p>A third death is reported on October 10: a 78-year-old nursing home patient. The Australian Government issues its first Public Health Advisory. By October 13, the Queensland CHO announces <strong>25 new suspected cases</strong> admitted to five Brisbane hospitals: St Andrew's War Memorial, St Vincent's Private, RBWH, North-West Private, and Children's Hospital. Two cases are in small children, aged 1 and 3. Both are severe. These cases appear unlinked to the existing clusters.</p>
+  <p>Then, on October 14, the geographic boundary breaks. A patient is hospitalized in <strong>Townsville</strong>, a coastal city 1,300 kilometers north of Brisbane. The patient has a history of travel from Brisbane. A contact tracing unit is activated to identify passengers on the flight manifest.</p>
+  <p>Seven of the previously suspected Brisbane cases test positive for influenza and are removed from the investigation. But thirteen new suspected cases are hospitalized on October 14 alone. The net keeps growing.</p>
+
+  <div class="story-map reveal" id="map3-wrap">
+    <div class="side-fade-l"></div><div class="side-fade-r"></div>
+    <svg id="map3" viewBox="0 0 700 500" style="width:100%;display:block;"></svg>
+    <div class="map-caption">Queensland — October 14. A 1,300 km jump to Townsville. Someone carried it on a plane.</div>
+  </div>
+
+  <div class="doc-card gov reveal">
+    <div class="doc-label">Queensland Health Advisory · October 14</div>
+    <div class="doc-title">Evolving Respiratory Illness Situation in Queensland</div>
+    <div class="doc-text">13 new suspected cases admitted to Brisbane hospitals. 1 case in Townsville with travel history from Brisbane. Contact tracing activated. 7 cases removed (influenza positive). Total confirmed fatalities linked to Kelvin Grove: 4. No confirmed evidence of community-wide transmission of a novel pathogen, but investigations remain ongoing.</div>
+  </div>
+
+  <div class="doc-card gov reveal">
+    <div class="doc-label">Australian Public Health Advisory #2 · October 14</div>
+    <div class="doc-title">Federal Government Response Measures</div>
+    <div class="doc-text">Enhanced national surveillance through ASPREN. Expanded laboratory testing and genomic sequencing. Federal notification to WHO WPRO under International Health Regulations. Current public health risk: Moderate. No travel restrictions at this stage.</div>
+  </div>
+</div>
+
+<!-- ===== ACT III: IDENTIFICATION ===== -->
+
+<div class="section reveal">
+  <div class="date-marker" style="color:#a855f7;">October 16 · Day 21</div>
+  <h2>The pathogen has a name</h2>
+  <p>Twenty-one days after the first two patients were admitted. The Doherty Institute in Melbourne achieves what the world has been waiting for: <strong>genetic identification of the causative agent</strong> through meta-sequencing of clinical specimens. The genome is published on GenBank the following day.</p>
+  <p>It is a novel paramyxovirus. Family Paramyxoviridae, genus Spookyvirus. Approximately 85% nucleotide identity with known Spookyviruses, especially in the conserved polymerase regions. But this one is different: lower virulence, broader human tissue tropism, and critically, <strong>human-to-human transmissibility</strong>. The suspected reservoir is native fruit bats, <em>Pteropus</em> species, with a likely zoonotic spillover event somewhere in Southeast Queensland.</p>
+  <p>It will eventually be designated <strong>Spooky-like Virus 2024 (SPOK-24)</strong>, causing a disease named <strong>Spooky-Associated Respiratory Syndrome 2024 (SPOKARS-24)</strong>.</p>
+
+  <div class="doc-card science reveal">
+    <div class="doc-label">WHO Technical Brief · October 20</div>
+    <div class="doc-title">Identification of the Causative Agent of Emerging Respiratory Epidemic (SPOK-24)</div>
+    <div class="doc-text">Incubation period estimated at 2–4 days. Primary symptoms: fever, fatigue, rhinorrhea, non-productive cough, myalgia, sore throat. Complications: viral pneumonia, respiratory distress, neurological symptoms (rare), meningitis (&lt;1%). Mortality rate approximately 12% among confirmed hospitalized cases, with higher risk in elderly, comorbid patients and children under 16.</div>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker" style="color:#a855f7;">October 22–29 · Days 27–34</div>
+  <h2>The science races forward</h2>
+  <p>PCR primers are developed by the Doherty lab on October 22, giving clinicians the first reliable diagnostic tool. Three days later, the WHO publishes its first situation report. The same day, a Lancet paper describes the clinical features of the first 70 patients.</p>
+  <p>On October 29, the New England Journal of Medicine publishes a correspondence detailing the early transmission dynamics. The picture is sobering.</p>
+
+  <div class="data-table reveal" style="margin:32px 0;">
+    <table class="data-table">
+      <caption style="text-align:left;font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:8px;letter-spacing:1px;">CLINICAL PROFILE — FIRST 70 PATIENTS (LANCET / NEJM)</caption>
+      <tr><th>Finding</th><th class="num">SPOK-24</th><th class="num">COVID-19 (early)</th></tr>
+      <tr><td>R&#8320;</td><td class="num">1.3 – 2.3</td><td class="num">~2.5</td></tr>
+      <tr><td>Incubation period</td><td class="num">2 – 4 days</td><td class="num">4 – 7 days</td></tr>
+      <tr><td>Serial interval</td><td class="num">4 – 8 days</td><td class="num">5 – 6 days</td></tr>
+      <tr><td>Fever</td><td class="num accent">94%</td><td class="num">89%</td></tr>
+      <tr><td>Cough</td><td class="num">69%</td><td class="num">68%</td></tr>
+      <tr><td>Viral pneumonia (imaging)</td><td class="num accent">87%</td><td class="num">~75%</td></tr>
+      <tr><td>Neurologic complications</td><td class="num accent">5.7%</td><td class="num">Rare</td></tr>
+      <tr><td>ICU admission</td><td class="num">19%</td><td class="num">~25%</td></tr>
+      <tr><td>Case fatality (hospitalized)</td><td class="num accent">8.6%</td><td class="num">~10–15%</td></tr>
+    </table>
+  </div>
+
+  <div class="pull-quote reveal">
+    This outbreak highlights the fragile boundary between zoonotic spillover and international epidemic spread. It reinforces the need for rapid genomic surveillance and cross-disciplinary outbreak intelligence.
+    <cite>— NEJM Correspondence, October 29</cite>
+  </div>
+
+  <!-- WHO SitRep progression -->
+  <div class="progression reveal">
+    <div class="prog-week"><div class="prog-wk">Wk 42</div><div class="prog-num">85</div><div class="prog-label">Hosp.</div></div>
+    <div class="prog-week active"><div class="prog-wk">Wk 43</div><div class="prog-num">141</div><div class="prog-label">Hosp.</div></div>
+    <div class="prog-week"><div class="prog-wk">Wk 44</div><div class="prog-num">192</div><div class="prog-label">Hosp.</div></div>
+    <div class="prog-week"><div class="prog-wk">Wk 45</div><div class="prog-num">276</div><div class="prog-label">Hosp.</div></div>
+  </div>
+  <p style="font-size:13px;color:var(--text3);text-align:center;font-family:var(--mono);">WHO Situation Reports: cumulative hospitalizations, Weeks 42–45</p>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker">October 20 · Day 25</div>
+  <h2>Australia under siege</h2>
+  <p>85 total hospitalizations. Cases in Brisbane, Townsville, Rockhampton, and now <strong>Sydney</strong>. Seven deaths, including two children. The epidemic has broken containment in Queensland.</p>
+
+  <div class="story-map reveal" id="map4-wrap">
+    <div class="side-fade-l"></div><div class="side-fade-r"></div>
+    <svg id="map4" viewBox="0 0 700 560" style="width:100%;display:block;"></svg>
+    <div class="map-caption">Australia — October 20. The outbreak has reached four cities across two states.</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num">85</div><div class="stat-label">Hospitalized</div></div>
+    <div class="stat"><div class="stat-num">7</div><div class="stat-label">Deaths</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">4</div><div class="stat-label">Cities affected</div></div>
+  </div>
+</div>
+
+<!-- ===== ACT IV: THE VIRUS CROSSES OCEANS ===== -->
+
+<div class="section reveal">
+  <div class="date-marker">October 28 · Day 33</div>
+  <h2>The first American case</h2>
+  <p>An Australian citizen working in New York City is admitted to <strong>New York-Presbyterian/Columbia University Irving Medical Center</strong>. He had recently traveled to Brisbane to visit family, and developed fever, muscle aches, and a runny nose shortly after landing at JFK. He tested positive for SPOK-24 on October 28.</p>
+  <p>The CDC and the New York City Department of Health launch an urgent contact-tracing operation on the flight manifest. The patient had not interacted with anyone in New York City aside from airport personnel and a taxi driver. He is in isolation, stable, and recovering.</p>
+
+  <div class="doc-card news reveal">
+    <div class="doc-label">CNN · October 29</div>
+    <div class="doc-title">First U.S. Case of Virus X Confirmed in New York: Australian Traveler Isolated in NYC Hospital</div>
+    <div class="doc-text">This is the first confirmed case of Virus X in the United States, marking a significant escalation in the outbreak, which has already spread beyond Australia into multiple countries across four continents. The CDC is considering escalating its travel advisory for Australia to Level 3.</div>
+  </div>
+
+  <div class="pull-quote blue reveal">
+    "We want to reassure New Yorkers that there is no evidence of community transmission at this time. This is an isolated case."
+    <cite>— NYC Health Commissioner</cite>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker who">November 4 · Day 40</div>
+  <h2>The international count begins</h2>
+  <p>WHO Situation Report #3 confirms what epidemiologists feared: the virus is no longer contained to Australia. Confirmed importations in Tokyo, Auckland, Christchurch, Port Moresby, New York, Hong Kong, and Bangkok. All with travel history from Brisbane. The household transmission study in Brisbane involving 50 families has begun. Nosocomial transmission is confirmed in multiple hospitals.</p>
+  <p>The WHO announces it is convening an Emergency Committee to assess whether SPOK-24 constitutes a Public Health Emergency of International Concern.</p>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num">192</div><div class="stat-label">Hospitalizations</div></div>
+    <div class="stat"><div class="stat-num">17</div><div class="stat-label">Deaths</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">7</div><div class="stat-label">Countries</div></div>
+  </div>
+</div>
+
+<!-- ===== ACT V: PHEIC ===== -->
+
+<div class="section reveal">
+  <div class="date-marker who">November 12 · Day 48</div>
+  <h2>PHEIC</h2>
+  <p>The WHO Director-General speaks from Geneva. The Emergency Committee has reviewed the evidence: sustained human-to-human transmission, confirmed international spread to 20 countries, 408 total hospitalizations, 24 deaths, contact tracing collapsed in Brisbane. The word that changes everything: <strong>Public Health Emergency of International Concern</strong>.</p>
+
+  <div class="doc-card who reveal">
+    <div class="doc-label">WHO Press Release · November 12</div>
+    <div class="doc-title">WHO Declares Public Health Emergency of International Concern (PHEIC) for Virus X Outbreak</div>
+    <div class="doc-text">287 confirmed infections in Brisbane alone, with actual numbers likely much higher. 408 total hospitalizations across multiple Australian cities. 24 confirmed deaths. Confirmed international spread to 20 countries across four continents. Contact tracing efforts have been overwhelmed.</div>
+  </div>
+
+  <div class="pull-quote blue reveal">
+    "Declaring a Public Health Emergency of International Concern is not a decision we take lightly. This designation underscores the urgency of global cooperation."
+    <cite>— WHO Director-General, November 12</cite>
+  </div>
+
+  <p>The cascade is immediate. On November 11, the USA, Russia, France, Spain, Italy, Ireland, Argentina, China, Switzerland, Belgium, Portugal, New Zealand, Taiwan, and Mexico restrict travel to and from Australia for humanitarian reasons only. Domestic travel within Australia drops to less than 10%.</p>
+
+  <div class="doc-card gov reveal">
+    <div class="doc-label">Australian Government · November 12</div>
+    <div class="doc-title">Updated Public Health Guidance and Mitigation Measures</div>
+    <div class="doc-text">Work from home mandated where possible. Indoor gatherings over 50 strongly discouraged. Mask-wearing recommended in crowded indoor spaces. Non-essential interstate travel postponed. Non-urgent surgeries may be delayed. Aged care visitation restricted to essential visitors only.</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num">408</div><div class="stat-label">Hospitalizations</div></div>
+    <div class="stat"><div class="stat-num">24</div><div class="stat-label">Deaths</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">20</div><div class="stat-label">Countries</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--amber)">14</div><div class="stat-label">Travel bans</div></div>
+  </div>
+</div>
+
+<!-- ===== ACT VI: GLOBAL ===== -->
+
+<div class="section reveal">
+  <div class="date-marker">November 23 – December 7 · Days 59–73</div>
+  <h2>The virus goes global</h2>
+  <p>Reports begin arriving from across the Western Pacific. <strong>Vietnam</strong> flags an anomalous increase in hospitalizations in the capital. Several cases, none with travel history to Australia, are confirmed as SPOK-24. <strong>South Korea</strong> identifies three independent clusters in Seoul, again without travel links. <strong>Japan</strong> confirms a dozen hospitalizations. <strong>Singapore</strong> and <strong>Thailand</strong> report their own clusters.</p>
+  <p>In the United States, the CDC's Traveler Genomic Surveillance program detects SPOK-24 genetic material in wastewater samples collected from aircraft and through the swab program at major West Coast airports. Within days, the first US hospitalizations due to SPOK-24 are confirmed.</p>
+
+  <div class="story-map reveal" id="map5-wrap">
+    <div class="side-fade-l"></div><div class="side-fade-r"></div>
+    <svg id="map5" viewBox="0 0 700 450" style="width:100%;display:block;"></svg>
+    <div class="map-caption">The world — December 2024. From Brisbane, the virus has reached multiple continents. Lines trace confirmed importation pathways.</div>
+  </div>
+</div>
+
+<div class="section reveal">
+  <div class="date-marker">December 14–25 · Days 80–91</div>
+  <h2>Testing breaks down</h2>
+  <p>The United States removes the travel-history requirement for SPOK-24 testing. The WHO recommends testing all patients presenting with respiratory symptoms. But it is too late for orderly surveillance: <strong>widespread shortages in diagnostic supplies and laboratory capacity</strong> are reported globally. The overlap with seasonal respiratory viruses creates a fog of uncertainty — a surge in influenza-like illness makes it impossible to distinguish SPOK-24 from common infections on symptoms alone.</p>
+  <p>By Christmas, cases are being detected across multiple US states. France confirms hospitalizations in Paris and begins regular reporting. The UK confirms cases in Manchester, London, and Glasgow. But at the same time, a different signal emerges from the other side of the world.</p>
+</div>
+
+<!-- ===== ACT VII: SEVERITY ===== -->
+
+<div class="section reveal">
+  <div class="date-marker" style="color:#a855f7;">January 7, 2025 · Day 104</div>
+  <h2>How deadly is it?</h2>
+  <p>A preprint from the University of Queensland provides the first rigorous severity estimates, based on 247 Brisbane-area households with confirmed infections, clinical admissions across six Queensland hospitals, and surveillance of repatriation flights.</p>
+  <p>The findings reshape the risk calculus. Approximately 20% of infections are asymptomatic. Among symptomatic individuals, the infection fatality ratio rises steeply with age:</p>
+
+  <div class="data-table reveal">
+    <table class="data-table">
+      <caption style="text-align:left;font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:8px;letter-spacing:1px;">SEVERITY ESTIMATES BY AGE GROUP (PREPRINT, JAN 7)</caption>
+      <tr><th>Age group</th><th class="num">IFR (symptomatic)</th><th class="num">IHR (symptomatic)</th></tr>
+      <tr><td>0–17 years</td><td class="num">0.03%</td><td class="num">1.9%</td></tr>
+      <tr><td>18–49 years</td><td class="num">0.06%</td><td class="num">0.5%</td></tr>
+      <tr><td>50–64 years</td><td class="num">0.1%</td><td class="num">1.5%</td></tr>
+      <tr><td>65+ years</td><td class="num accent">4.0%</td><td class="num accent">20.1%</td></tr>
+    </table>
+  </div>
+
+  <p>An infection fatality ratio of 4% in the elderly. A hospitalization rate of one in five. And pediatric fatalities confirmed in both household and hospital cohorts. The paper's conclusion is measured but unambiguous: SPOK-24 poses <strong>a serious and age-stratified threat</strong>, with severity concentrated in the oldest and youngest populations.</p>
+</div>
+
+<!-- ===== ACT VIII: THE QUESTION ===== -->
+
+<div class="section reveal">
+  <div class="date-marker">January 15–18, 2025 · Days 112–115</div>
+  <h2>Mixed signals</h2>
+  <p>The CDC begins publishing weekly state-level surveillance data: cases, hospitalizations, and deaths, going back to November 30. Australia releases its fatality time series. Several countries start providing regular death updates. The infrastructure of global monitoring is spinning up, weeks behind the virus.</p>
+  <p>But the picture that emerges is contradictory. In <strong>Australia</strong>, the country where it all began, the epidemic curve appears to be <strong>plateauing</strong>. New hospitalizations are leveling off. Case counts, after weeks of exponential growth, are flattening. Some epidemiologists suggest the combination of early public health measures, behavioral changes, and natural immunity buildup may be slowing transmission. If true, it would be an encouraging signal: the epidemic can be bent.</p>
+  <p>Elsewhere, the trajectory looks very different. The situation in <strong>South Korea</strong> and <strong>Japan</strong> is rapidly evolving. Both countries are reporting large numbers of hospitalizations and deaths, although official confirmation remains problematic due to severe shortages in testing capacity. Reporting delays of up to two weeks make real-time assessment nearly impossible. Cases are accelerating in the United States, France, and the United Kingdom, where surveillance systems are still catching up.</p>
+  <p>Is Australia's plateau a preview of what other countries can achieve? Or is it an artifact of testing saturation — a ceiling on detection, not on transmission? The data, at this stage, cannot distinguish between the two.</p>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num">830+</div><div class="stat-label">Reported deaths</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">17,000+</div><div class="stat-label">Reported cases</div></div>
+  </div>
+</div>
+
+<div class="section reveal" style="text-align:center;padding:80px 0 20px;">
+  <div class="date-marker" style="color:var(--text3);">January 18, 2025 · Day 115</div>
+  <h2 style="font-size:clamp(26px,4vw,36px);line-height:1.3;max-width:600px;margin:0 auto 16px;">Are we facing a new pandemic?</h2>
+  <h2 style="font-size:clamp(22px,3.5vw,30px);color:var(--text2);font-weight:400;font-style:italic;max-width:600px;margin:0 auto;">And if so, will we be able to manage it?</h2>
+</div>
+
+<div class="section reveal" style="text-align:center;padding:40px 0 60px;">
+  <p style="font-size:14px;line-height:1.7;color:var(--text3);max-width:540px;margin:0 auto 20px;">Data and scientific information are from the SMH collaboration. Publicly available data worldwide are collected and maintained through the SPOKARS-24 Surveillance Dashboard.</p>
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:8px;background:rgba(29,78,216,.06);border:1px solid rgba(29,78,216,.15);color:var(--blue);font-size:14px;font-family:var(--mono);text-decoration:none;font-weight:500;">SPOKARS-24 Surveillance Dashboard →</a>
+</div>
+
+</div>
+
+<div class="divider"></div>
+<div class="footer">
+  <div class="warn">&#9888; FICTIONAL EXERCISE SCENARIO</div>
+  <p>Created for the SMH CrypticChallenge (C-CHA). All events, pathogens, and data are entirely fictitious.</p>
+</div>
+
+<script>
+const TILES='https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png';
+const TILES_LABELS='https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png';
+const tileOpts={maxZoom:19,subdomains:'abcd',tileSize:512,zoomOffset:-1};
+const mapRefs={},mapInits={};
+let mapsInitialized={};
+
+function makePulse(c){return L.divIcon({className:'',html:'<div style="width:16px;height:16px;background:'+c+';border-radius:50%;border:2px solid rgba(255,255,255,.9);animation:marker-pulse 2s ease infinite;box-shadow:0 0 8px '+c+'"></div>',iconSize:[16,16],iconAnchor:[8,8]});}
+function makeDot(c,s){return L.divIcon({className:'',html:'<div style="width:'+s+'px;height:'+s+'px;background:'+c+';border-radius:50%;border:1.5px solid rgba(255,255,255,.8);box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>',iconSize:[s,s],iconAnchor:[s/2,s/2]});}
+
+// MAP 1: Street level
+mapInits['map1-wrap']=function(){
+  const m=L.map('map1',{zoomControl:false,attributionControl:false,scrollWheelZoom:false,dragging:false}).setView([-27.449,153.019],15);
+  L.tileLayer(TILES,tileOpts).addTo(m);L.tileLayer(TILES_LABELS,Object.assign({},tileOpts,{opacity:0.4})).addTo(m);mapRefs['map1']=m;setTimeout(()=>m.invalidateSize(),100);
+  L.marker([-27.4495,153.0107],{icon:makePulse('#ef4444')}).addTo(m).bindTooltip('Kelvin Grove Nursing Home',{permanent:true,direction:'right',className:'map-tip',offset:[10,0]});
+  L.marker([-27.4489,153.0281],{icon:makeDot('#f59e0b',12)}).addTo(m).bindTooltip("RBWH",{permanent:true,direction:'right',className:'map-tip',offset:[10,0]});
+  L.polyline([[-27.4495,153.0107],[-27.4489,153.0281]],{color:'#b91c1c',weight:2.5,opacity:0.85,dashArray:'8,6'}).addTo(m);
+};
+
+// MAP 2: Brisbane metro
+mapInits['map2-wrap']=function(){
+  const m=L.map('map2',{zoomControl:false,attributionControl:false,scrollWheelZoom:false,dragging:false}).setView([-27.475,153.015],13);
+  L.tileLayer(TILES,tileOpts).addTo(m);L.tileLayer(TILES_LABELS,Object.assign({},tileOpts,{opacity:0.4})).addTo(m);mapRefs['map2']=m;setTimeout(()=>m.invalidateSize(),100);
+  L.marker([-27.4495,153.0107],{icon:makePulse('#ef4444')}).addTo(m).bindTooltip('Nursing Home',{permanent:true,direction:'left',className:'map-tip',offset:[-10,0]});
+  L.marker([-27.4489,153.0281],{icon:makeDot('#f59e0b',10)}).addTo(m).bindTooltip('RBWH',{permanent:true,direction:'right',className:'map-tip',offset:[10,0]});
+  L.marker([-27.5011,153.0117],{icon:makePulse('#3b82f6')}).addTo(m).bindTooltip("Children's Health QLD",{permanent:true,direction:'left',className:'map-tip',offset:[-10,0]});
+  L.marker([-27.5066,153.0323],{icon:makeDot('#3b82f6',10)}).addTo(m).bindTooltip('Princess Alexandra',{permanent:true,direction:'right',className:'map-tip',offset:[10,0]});
+  L.marker([-27.4676,153.0281],{icon:makeDot('#f59e0b',8)}).addTo(m).bindTooltip("St Andrew's",{permanent:true,direction:'right',className:'map-tip',offset:[8,0]});
+  L.marker([-27.4567,153.0361],{icon:makeDot('#f59e0b',8)}).addTo(m).bindTooltip("St Vincent's",{permanent:true,direction:'right',className:'map-tip',offset:[8,0]});
+  L.marker([-27.3894,152.9683],{icon:makeDot('#f59e0b',8)}).addTo(m).bindTooltip('North-West Private',{permanent:true,direction:'left',className:'map-tip',offset:[-8,0]});
+  L.polyline([[-27.4495,153.0107],[-27.4489,153.0281]],{color:'#b91c1c',weight:2,opacity:0.7,dashArray:'6,6'}).addTo(m);
+  L.polyline([[-27.5011,153.0117],[-27.5066,153.0323]],{color:'#1d4ed8',weight:2,opacity:0.7,dashArray:'6,6'}).addTo(m);
+};
+
+// MAP 3: Queensland
+// MAP 3: Queensland (D3 + TopoJSON)
+mapInits['map3-wrap']=function(){
+  const W=700,H=500;
+  const svg=d3.select('#map3');
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','var(--bg)');
+  const proj=d3.geoMercator().center([150.5,-23.5]).scale(2200).translate([W/2,H/2]);
+  const path=d3.geoPath().projection(proj);
+  const url='https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+  d3.json(url).then(world=>{
+    const land=topojson.feature(world,world.objects.countries);
+    svg.append('g').selectAll('path').data(land.features).join('path')
+      .attr('d',path).attr('fill','#fff').attr('stroke','#ccc').attr('stroke-width',0.5);
+    const cities=[
+      {name:'Brisbane',ll:[-27.47,153.03],pulse:true},
+      {name:'Rockhampton',ll:[-23.38,150.51],color:'#92400e'},
+      {name:'Townsville',ll:[-19.26,146.82],pulse:true},
+    ];
+    // Flight arc
+    const pts=[];
+    for(let t=0;t<=1;t+=0.01){
+      const lat=-27.47*(1-t)+-19.26*t;
+      const lon=153.03*(1-t)+146.82*t+Math.sin(t*Math.PI)*-2;
+      pts.push(proj([lon,lat]));
+    }
+    svg.append('path').attr('d',d3.line()(pts)).attr('fill','none')
+      .attr('stroke','#b91c1c').attr('stroke-width',2).attr('stroke-dasharray','8,6').attr('opacity',0.7);
+    const mid=proj([148.5,-23]);
+    svg.append('text').attr('x',mid[0]).attr('y',mid[1]-12).attr('text-anchor','middle')
+      .attr('fill','rgba(185,28,28,.6)').attr('font-family','var(--mono)').attr('font-size','11px').attr('font-weight','500').text('1,300 km ✈');
+    cities.forEach(c=>{
+      const p=proj([c.ll[1],c.ll[0]]);
+      const col=c.color||'#b91c1c';
+      if(c.pulse){
+        svg.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',10).attr('fill','none').attr('stroke',col).attr('stroke-width',1.5).attr('class','svg-ring');
+      }
+      svg.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',5).attr('fill',col).attr('stroke','#fff').attr('stroke-width',1.5);
+      svg.append('text').attr('x',p[0]+10).attr('y',p[1]+4).attr('fill','#1a1a1a')
+        .attr('font-family','var(--mono)').attr('font-size','11px').attr('font-weight','500').text(c.name);
+    });
+  });
+};
+
+// MAP 4: Australia-wide (D3 + TopoJSON)
+mapInits['map4-wrap']=function(){
+  const W=700,H=560;
+  const svg=d3.select('#map4');
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','var(--bg)');
+  const proj=d3.geoMercator().center([147,-28]).scale(1100).translate([W/2,H/2]);
+  const path=d3.geoPath().projection(proj);
+  const url='https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+  d3.json(url).then(world=>{
+    const land=topojson.feature(world,world.objects.countries);
+    svg.append('g').selectAll('path').data(land.features).join('path')
+      .attr('d',path).attr('fill','#fff').attr('stroke','#ccc').attr('stroke-width',0.5);
+    const cities=[
+      {name:'Brisbane',ll:[-27.47,153.03],pulse:true,label:'75 hosp.'},
+      {name:'Townsville',ll:[-19.26,146.82],color:'#92400e',label:'1 hosp.'},
+      {name:'Rockhampton',ll:[-23.38,150.51],color:'#92400e',label:'1 hosp.'},
+      {name:'Sydney',ll:[-33.87,151.21],pulse:true,color:'#92400e',label:'8 hosp.'},
+    ];
+    const bp=proj([153.03,-27.47]);
+    // Lines from Brisbane to other cities
+    cities.filter(c=>c.name!=='Brisbane').forEach(c=>{
+      const cp2=proj([c.ll[1],c.ll[0]]);
+      svg.append('line').attr('x1',bp[0]).attr('y1',bp[1]).attr('x2',cp2[0]).attr('y2',cp2[1])
+        .attr('stroke',c.color||'#b91c1c').attr('stroke-width',1.5).attr('stroke-dasharray','6,6').attr('opacity',0.4);
+    });
+    cities.forEach(c=>{
+      const p=proj([c.ll[1],c.ll[0]]);
+      const col=c.color||'#b91c1c';
+      if(c.pulse){
+        svg.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',10).attr('fill','none').attr('stroke',col).attr('stroke-width',1.5).attr('class','svg-ring');
+      }
+      svg.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',c.pulse?6:4).attr('fill',col).attr('stroke','#fff').attr('stroke-width',1.5);
+      svg.append('text').attr('x',p[0]+12).attr('y',p[1]+4).attr('fill','#1a1a1a')
+        .attr('font-family','var(--mono)').attr('font-size','11px').attr('font-weight','500').text(c.name+(c.label?' · '+c.label:''));
+    });
+  });
+};
+
+// MAP 5: Global (D3 + TopoJSON)
+mapInits['map5-wrap']=function(){
+  const W=700,H=450;
+  const svg=d3.select('#map5');
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','var(--bg)');
+  // Use a projection centered on ~30E to show Brisbane, Asia, Europe and US West Coast
+  const proj=d3.geoNaturalEarth1().center([30,10]).scale(130).translate([W/2,H/2]);
+  const path=d3.geoPath().projection(proj);
+  const url='https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+  d3.json(url).then(world=>{
+    const land=topojson.feature(world,world.objects.countries);
+    svg.append('g').selectAll('path').data(land.features).join('path')
+      .attr('d',path).attr('fill','#fff').attr('stroke','#ccc').attr('stroke-width',0.3);
+    const brisbane=[153.03,-27.47];
+    const targets=[
+      {name:'Ho Chi Minh',ll:[106.63,10.82],color:'#b91c1c'},
+      {name:'Seoul',ll:[126.98,37.57],color:'#b91c1c'},
+      {name:'Tokyo',ll:[139.65,35.68],color:'#b91c1c'},
+      {name:'Singapore',ll:[103.82,1.35],color:'#b91c1c'},
+      {name:'Bangkok',ll:[100.50,13.76],color:'#b91c1c'},
+      {name:'San Francisco',ll:[-122.42,37.77],color:'#1d4ed8'},
+      {name:'Los Angeles',ll:[-118.41,33.94],color:'#1d4ed8'},
+      {name:'Seattle',ll:[-122.33,47.61],color:'#1d4ed8'},
+      {name:'New York',ll:[-74.01,40.71],color:'#1d4ed8'},
+      {name:'Paris',ll:[2.35,48.86],color:'#166534'},
+      {name:'London',ll:[-0.13,51.51],color:'#166534'},
+      {name:'Manchester',ll:[-2.24,53.48],color:'#166534'},
+    ];
+    const bp=proj(brisbane);
+    // Lines
+    targets.forEach(t=>{
+      const tp=proj(t.ll);
+      if(!tp||!bp)return;
+      svg.append('line').attr('x1',bp[0]).attr('y1',bp[1]).attr('x2',tp[0]).attr('y2',tp[1])
+        .attr('stroke',t.color).attr('stroke-width',1.5).attr('stroke-dasharray','6,6').attr('opacity',0.5);
+    });
+    // Target dots
+    targets.forEach(t=>{
+      const tp=proj(t.ll);
+      if(!tp)return;
+      svg.append('circle').attr('cx',tp[0]).attr('cy',tp[1]).attr('r',4).attr('fill',t.color).attr('stroke','#fff').attr('stroke-width',1);
+      svg.append('text').attr('x',tp[0]).attr('y',tp[1]-8).attr('text-anchor','middle')
+        .attr('fill','#1a1a1a').attr('font-family','var(--mono)').attr('font-size','9px').attr('font-weight','500').text(t.name);
+    });
+    // Brisbane origin
+    svg.append('circle').attr('cx',bp[0]).attr('cy',bp[1]).attr('r',10).attr('fill','none').attr('stroke','#b91c1c').attr('stroke-width',1.5).attr('class','svg-ring');
+    svg.append('circle').attr('cx',bp[0]).attr('cy',bp[1]).attr('r',6).attr('fill','#b91c1c').attr('stroke','#fff').attr('stroke-width',1.5);
+    svg.append('text').attr('x',bp[0]).attr('y',bp[1]+18).attr('text-anchor','middle')
+      .attr('fill','#b91c1c').attr('font-family','var(--mono)').attr('font-size','10px').attr('font-weight','600').text('BRISBANE');
+  });
+};
+
+const style=document.createElement('style');
+style.textContent=`.map-tip{background:rgba(26,26,26,.92)!important;border:1px solid rgba(0,0,0,.2)!important;color:#f2efe9!important;font-family:'IBM Plex Mono',monospace!important;font-size:10px!important;padding:3px 8px!important;border-radius:4px!important;box-shadow:0 2px 8px rgba(0,0,0,.15)!important;}.map-tip::before{border-top-color:rgba(26,26,26,.92)!important;}`;
+document.head.appendChild(style);
+
+const observer=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('visible');
+      const id=entry.target.id;
+      if(id&&mapInits[id]&&!mapsInitialized[id]){
+        mapsInitialized[id]=true;
+        setTimeout(()=>{mapInits[id]();const mid=id.replace('-wrap','');setTimeout(()=>{if(mapRefs[mid])mapRefs[mid].invalidateSize();},300);setTimeout(()=>{if(mapRefs[mid])mapRefs[mid].invalidateSize();},800);},400);
+      }
+    }
+  });
+},{threshold:0.05,rootMargin:'0px 0px 50px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+</script>
+</body>
+</html>
