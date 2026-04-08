@@ -10,7 +10,7 @@ This document describes all noise filters, reporting adjustments, and data trans
 
 The dashboard integrates data from two simulation frameworks:
 
-- **GLEAM** (Global Epidemic and Mobility Model): 3,253 subpopulations, 232 countries, 36 weeks of simulation. Source file: `master_world-cities.csv` (~787K rows). Used for global death and case data.
+- **GLEAM** (Global Epidemic and Mobility Model): 3,253 subpopulations, 232 countries, states and territories, 36 weeks of simulation. Source file: `master_world-cities.csv` (~787K rows). Used for global death and case data.
 - **EpiHiper**: Agent-based model used for four locations (California, Virginia, France, United Kingdom), initialized with GLEAM importations. EpiHiper output replaces GLEAM data entirely for these locations.
 
 ### Dashboard Time Window
